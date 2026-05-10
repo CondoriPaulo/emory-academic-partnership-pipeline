@@ -12,7 +12,7 @@ Azure data pipeline tracking nursing school partnerships through clinical rotati
 
 ## 🎯 The Problem
 
-Emory Healthcare partners with 74+ nursing schools but lacked a unified view of which schools produce students who:
+Emory Healthcare partners with 74+ nursing schools, but lacks a unified view of which schools produce students who:
 - Complete clinical rotations
 - Get hired after graduation
 - Stay long-term as nurses
@@ -21,12 +21,44 @@ Emory Healthcare partners with 74+ nursing schools but lacked a unified view of 
 
 A fully automated, HIPAA-aligned data pipeline ingesting from 4 sources into a Power BI dashboard.
 
-<img width="155" height="716" alt="image" src="https://github.com/user-attachments/assets/166acce1-88df-4deb-afa9-b971731a7635" /> <img width="231" height="618" alt="image" src="https://github.com/user-attachments/assets/65f56c52-618d-4c85-adab-9e0b681f7e8d" />  <img width="172" height="636" alt="image" src="https://github.com/user-attachments/assets/6abb3aff-cd46-4192-8c96-fce8ad97366c" />  <img width="815" height="509" alt="image" src="https://github.com/user-attachments/assets/888e0827-b711-465a-9414-46d70e0e7321" />  <img width="258" height="716" alt="image" src="https://github.com/user-attachments/assets/be8aef2a-2fa2-4e54-95bd-30de075766c9" />
 
+### How It Works
 
+The pipeline handles two distinct source types — **PDFs** and **structured files (Excel/CSV)** — using a consistent pattern: ingestion → cleaning → JSON normalization → SQL load → Power BI.
 
+#### 📄 PDF Sources (Affiliated Schools, NCLEX)
 
+1. **File drop** — A new PDF lands in OneDrive/SharePoint, triggering an Azure Logic App
+2. **OCR extraction** — Logic App sends the file to **Azure AI Document Intelligence**, which returns a raw JSON response (~30,000 lines) of layout, tables, and text
+3. **Normalization** — The raw JSON is passed to a custom **Azure Function App (Python)** that parses it into a clean, row-oriented JSON structure with consistent field names and human-readable values
+4. **Database load** — Logic App iterates through the cleaned JSON and **UPSERTs** each row into the corresponding Azure SQL table using `MERGE` statements
 
+> **Why a Function App for normalization?** Document Intelligence returns positional/layout data, not relational rows. We studied the source documents to understand their structure, then built deterministic Python parsers to convert the OCR output into clean rows that match the SQL schema.
+
+#### 📊 Structured Sources (ACEMAPP, Vizient)
+
+1. **File drop** — Excel/CSV file lands in OneDrive/SharePoint, triggering a Logic App
+2. **Cleaning & transformation** — File is sent directly to a Python **Azure Function App** (no OCR needed) that:
+   - Profiles the data
+   - Strips control characters (e.g. `\t` prefixes in Vizient data)
+   - Resolves column boundary issues
+   - Converts the cleaned data into a normalized JSON structure
+3. **Database load** — Logic App iterates through the JSON and inserts each row into the appropriate SQL table
+
+### Architectural Rule: Separation of Concerns
+
+A core design principle enforced across all four pipelines:
+
+| Layer | Responsibility |
+|---|---|
+| **Function App (Python)** | Reads → cleans → returns JSON. **Never writes to SQL.** |
+| **Logic App** | Orchestrates flow, handles SQL UPSERTs, manages retries |
+| **Azure SQL** | Stores normalized data in star-schema tables |
+| **Power BI** | Reconciles cross-source data (e.g. fuzzy school name matching) via DirectQuery + DAX |
+
+This separation makes each component independently testable and replaceable — the Function App can be reused for other Logic Apps, and the SQL load logic stays orchestration-side where it belongs.
+
+---
 
 **Stack:**
 - **Azure Function Apps** (Python) — Data cleaning & normalization
@@ -34,6 +66,24 @@ A fully automated, HIPAA-aligned data pipeline ingesting from 4 sources into a P
 - **Azure SQL Database** — Star schema warehouse
 - **Azure AI Document Intelligence** — Deterministic OCR for PDF sources
 - **Power BI** — DirectQuery dashboard with DAX measures
+
+
+NCLEX Logic App Flow :
+<img width="155" height="716" alt="image" src="https://github.com/user-attachments/assets/166acce1-88df-4deb-afa9-b971731a7635" /> 
+
+
+Vizient Logic App Flow:
+<img width="231" height="618" alt="image" src="https://github.com/user-attachments/assets/65f56c52-618d-4c85-adab-9e0b681f7e8d" /> 
+
+
+Affiliated School Logic App Flow:
+<img width="172" height="636" alt="image" src="https://github.com/user-attachments/assets/6abb3aff-cd46-4192-8c96-fce8ad97366c" />  
+
+
+Acemapp Logic App Flow:
+<img width="815" height="509" alt="image" src="https://github.com/user-attachments/assets/888e0827-b711-465a-9414-46d70e0e7321" />  <img width="258" height="716" alt="image" src="https://github.com/user-attachments/assets/be8aef2a-2fa2-4e54-95bd-30de075766c9" />
+
+
 
 ---
 
