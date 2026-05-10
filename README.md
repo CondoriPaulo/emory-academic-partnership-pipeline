@@ -93,10 +93,10 @@ This project consists of 4 Azure Function App repositories, each handling one da
 
 | # | Function App | Source Data | Repository |
 |---|---|---|---|
-| 1 | ACEMAPP Rotation Parser | ~7,500 clinical rotation records (Excel) | [→ View Repo](https://github.com/CondoriPaulo/v2-AcemappRotationRequestFunc) |
-| 2 | Vizient Nurse Processor | ~5,225 hire/termination records (Excel) | [→ View Repo](https://github.com/CondoriPaulo/v2-VizientNurseHiresAndExitsFunc) |
-| 3 | Affiliated Schools Parser | 74 partner schools (PDF, OCR) | [→ View Repo](https://github.com/CondoriPaulo/affilatedSchools-v2-ParseAffiliatedSchools) |
-| 4 | NCLEX Normalizer | NCLEX pass-rate data (PDF, complex headers) | [→ View Repo](https://github.com/CondoriPaulo/NCLEX-normalizierfunc) |
+| 1 | ACEMAPP Rotation Parser | ~7,500 clinical rotation records (Excel) | [→ View Repo](https://github.com/CondoriPaulo/ACEMAPP) |
+| 2 | Vizient Nurse Processor | ~5,225 hire/termination records (Excel) | [→ View Repo](https://github.com/CondoriPaulo/VIZIENT) |
+| 3 | Affiliated Schools Parser | 74 partner schools (PDF, OCR) | [→ View Repo](https://github.com/CondoriPaulo/affiliatedschoolsFunc) |
+| 4 | NCLEX Normalizer | NCLEX pass-rate data (PDF, complex headers) | [→ View Repo](https://github.com/CondoriPaulo/NCLEX-NormalizerFunc) |
 
 ---
 
